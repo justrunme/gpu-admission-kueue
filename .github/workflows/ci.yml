@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [main, feat/**]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.23.6"
+      - name: Vet, tidy, unit tests
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+          go vet ./...
+          go test ./... -count=1
+      - name: Corpus + evidence
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          go run ./cmd/corpus
+          go run ./cmd/evidencegen
+      - name: Upload results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: corpus-results
+          path: |
+            results/results.json
+            docs/EVIDENCE.md
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: "1.23.6"
+      - name: Install kind and kubectl
+        run: |
+          KUBECTL_VER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
+          curl -fsSL -o /tmp/kubectl "https://dl.k8s.io/release/${KUBECTL_VER}/bin/linux/amd64/kubectl"
+          sudo install -m 0755 /tmp/kubectl /usr/local/bin/kubectl
+          curl -fsSL -o /tmp/kind "https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64"
+          sudo install -m 0755 /tmp/kind /usr/local/bin/kind
+          kubectl version --client
+          kind version
+      - name: E2E on kind (standard in-cluster path)
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          # Explicitly unset workarounds — CI must use demo/setup.sh + in-cluster Deployment.
+          GPU_ADMISSION_KIND_WORKAROUNDS: ""
+        run: bash test/e2e/run.sh
+      - name: Upload e2e results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: e2e-results
+          path: results/e2e.json
