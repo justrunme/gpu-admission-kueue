@@ -95,17 +95,16 @@ func Evaluate(pol *v1alpha1.GPUAdmissionPolicySpec, in workloadinfo.Input, usage
 		}
 	}
 
-	// Image registry allowlist
+	// Image registry allowlist — match the full image reference against each entry
+	// as a prefix (not host-only), so "ghcr.io/acme/" does not admit "ghcr.io/evil/x".
 	if len(pol.AllowedImageRegistries) > 0 {
 		if len(in.Images) == 0 {
 			return deny("undecidable", "no container images found; cannot evaluate registry allowlist", details)
 		}
 		for _, img := range in.Images {
-			reg := workloadinfo.ImageRegistry(img)
-			if !registryAllowed(reg, pol.AllowedImageRegistries) {
+			if !workloadinfo.ImageMatchesAllowlist(img, pol.AllowedImageRegistries) {
 				details["rejected_image"] = img
-				details["rejected_registry"] = reg
-				return deny("disallowed_image_registry", fmt.Sprintf("image registry %q is not allowed", reg), details)
+				return deny("disallowed_image_registry", fmt.Sprintf("image %q does not match allowedImageRegistries", img), details)
 			}
 		}
 	}
@@ -252,23 +251,6 @@ func toSet(items []string) map[string]bool {
 		out[i] = true
 	}
 	return out
-}
-
-func registryAllowed(reg string, allow []string) bool {
-	for _, a := range allow {
-		a = strings.TrimSpace(a)
-		if a == "" {
-			continue
-		}
-		if strings.HasPrefix(reg, a) || strings.HasPrefix(a, reg) || reg == a {
-			return true
-		}
-		// also allow exact host match without trailing slash asymmetry
-		if strings.TrimSuffix(reg, "/") == strings.TrimSuffix(a, "/") {
-			return true
-		}
-	}
-	return false
 }
 
 // SortedKeys returns map keys sorted for stable digests.

@@ -3,8 +3,10 @@ package controller
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -174,6 +176,7 @@ func (r *WorkloadAdmissionReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}
 
+	prevChecks, _, _ := unstructured.NestedSlice(wl.Object, "status", "admissionChecks")
 	m := checks[idx].(map[string]any)
 	m["state"] = newState
 	m["message"] = message
@@ -181,10 +184,15 @@ func (r *WorkloadAdmissionReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	checks[idx] = m
 	// Replace the whole admissionChecks slice. Per-field "add" fails when Kueue
 	// already populated message/lastTransitionTime on the Pending entry.
+	// Optimistic concurrency: test the previous slice before replace.
 	if err := unstructured.SetNestedSlice(wl.Object, checks, "status", "admissionChecks"); err != nil {
 		return ctrl.Result{}, err
 	}
 	patch := []map[string]any{{
+		"op":    "test",
+		"path":  "/status/admissionChecks",
+		"value": prevChecks,
+	}, {
 		"op":    "replace",
 		"path":  "/status/admissionChecks",
 		"value": checks,
@@ -253,7 +261,11 @@ func (r *WorkloadAdmissionReconciler) decide(ctx context.Context, wl *unstructur
 	if err != nil {
 		return policy.Decision{}, evidence.Envelope{}, err
 	}
-	usage, err := r.collectUsage(ctx, wl)
+	teamKey := pol.Spec.TeamLabelKey
+	if teamKey == "" {
+		teamKey = "team"
+	}
+	usage, err := r.collectUsage(ctx, wl, teamKey)
 	if err != nil {
 		return policy.Decision{}, evidence.Envelope{}, err
 	}
@@ -398,8 +410,11 @@ func extractInput(ctx context.Context, c client.Client, wl *unstructured.Unstruc
 	return in, nil
 }
 
-func (r *WorkloadAdmissionReconciler) collectUsage(ctx context.Context, current *unstructured.Unstructured) (workloadinfo.UsageSnapshot, error) {
+func (r *WorkloadAdmissionReconciler) collectUsage(ctx context.Context, current *unstructured.Unstructured, teamLabelKey string) (workloadinfo.UsageSnapshot, error) {
 	usage := workloadinfo.NewUsageSnapshot()
+	if teamLabelKey == "" {
+		teamLabelKey = "team"
+	}
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(schema.GroupVersionKind{Group: kueueapi.Group, Version: kueueapi.Version, Kind: "WorkloadList"})
 	if err := r.List(ctx, list); err != nil {
@@ -408,6 +423,9 @@ func (r *WorkloadAdmissionReconciler) collectUsage(ctx context.Context, current 
 	for i := range list.Items {
 		wl := &list.Items[i]
 		if wl.GetUID() == current.GetUID() {
+			continue
+		}
+		if workloadFinishedOrInactive(wl) {
 			continue
 		}
 		checks, _, _ := unstructured.NestedSlice(wl.Object, "status", "admissionChecks")
@@ -430,11 +448,35 @@ func (r *WorkloadAdmissionReconciler) collectUsage(ctx context.Context, current 
 			return usage, err
 		}
 		usage.ByNamespace[wl.GetNamespace()] += in.GPURequest
-		if team := in.Labels["team"]; team != "" {
+		if team := strings.TrimSpace(in.Labels[teamLabelKey]); team != "" {
 			usage.ByTeam[team] += in.GPURequest
 		}
 	}
 	return usage, nil
+}
+
+func workloadFinishedOrInactive(wl *unstructured.Unstructured) bool {
+	if active, found, _ := unstructured.NestedBool(wl.Object, "spec", "active"); found && !active {
+		return true
+	}
+	conds, _, _ := unstructured.NestedSlice(wl.Object, "status", "conditions")
+	for _, raw := range conds {
+		m, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		if m["type"] == "Finished" && m["status"] == "True" {
+			return true
+		}
+	}
+	return false
+}
+
+func evidenceConfigMapName(wl *unstructured.Unstructured, env evidence.Envelope) string {
+	// Hash-based name: no collisions across workloads, never truncated with a trailing '-'.
+	seed := fmt.Sprintf("%s/%s/%s/%s", wl.GetNamespace(), wl.GetUID(), env.EnvelopeSHA256, env.Timestamp)
+	sum := sha256.Sum256([]byte(seed))
+	return fmt.Sprintf("ev-%x", sum[:16])
 }
 
 func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *unstructured.Unstructured, env evidence.Envelope) error {
@@ -445,10 +487,7 @@ func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *u
 	if err != nil {
 		return err
 	}
-	name := fmt.Sprintf("evidence-%s-%s", wl.GetNamespace(), wl.GetName())
-	if len(name) > 63 {
-		name = name[:63]
-	}
+	name := evidenceConfigMapName(wl, env)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -463,17 +502,12 @@ func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *u
 			"envelope.json": string(raw),
 		},
 	}
-	var existing corev1.ConfigMap
-	err = r.Get(ctx, types.NamespacedName{Name: name, Namespace: evidenceNamespace}, &existing)
-	if apierrors.IsNotFound(err) {
-		return r.Create(ctx, cm)
+	// Append-only: never overwrite an existing evidence ConfigMap.
+	err = r.Create(ctx, cm)
+	if apierrors.IsAlreadyExists(err) {
+		return nil
 	}
-	if err != nil {
-		return err
-	}
-	existing.Data = cm.Data
-	existing.Labels = cm.Labels
-	return r.Update(ctx, &existing)
+	return err
 }
 
 func truncate(s string, n int) string {

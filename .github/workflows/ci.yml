@@ -45,12 +45,18 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: "1.23.6"
-      - name: Install kind and kubectl
+      - name: Install kind and kubectl (pinned + checksummed)
+        env:
+          KUBECTL_VER: v1.32.2
+          KUBECTL_SHA256: 4f6a959dcc5b702135f8354cc7109b542a2933c46b808b248a214c1f69f817ea
+          KIND_VER: v0.27.0
+          KIND_SHA256: a6875aaea358acf0ac07786b1a6755d08fd640f4c79b7a2e46681cc13f49a04b
         run: |
-          KUBECTL_VER="$(curl -fsSL https://dl.k8s.io/release/stable.txt)"
           curl -fsSL -o /tmp/kubectl "https://dl.k8s.io/release/${KUBECTL_VER}/bin/linux/amd64/kubectl"
+          echo "${KUBECTL_SHA256}  /tmp/kubectl" | sha256sum -c -
           sudo install -m 0755 /tmp/kubectl /usr/local/bin/kubectl
-          curl -fsSL -o /tmp/kind "https://kind.sigs.k8s.io/dl/v0.27.0/kind-linux-amd64"
+          curl -fsSL -o /tmp/kind "https://kind.sigs.k8s.io/dl/${KIND_VER}/kind-linux-amd64"
+          echo "${KIND_SHA256}  /tmp/kind" | sha256sum -c -
           sudo install -m 0755 /tmp/kind /usr/local/bin/kind
           kubectl version --client
           kind version

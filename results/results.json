@@ -1,19 +1,19 @@
 {
   "commit_sha": "unknown",
-  "generated_at": "2026-10-22T09:02:39Z",
+  "generated_at": "2026-10-22T10:21:46Z",
   "metrics": {
     "allow_count": 1,
-    "claims_scope": "on this corpus of 12 scenarios",
-    "deny_count": 10,
+    "claims_scope": "on this corpus of 13 scenarios",
+    "deny_count": 11,
     "e2e_passed": null,
     "e2e_skip_reason": "unit corpus only; e2e recorded separately by test/e2e when run",
     "e2e_skipped": true,
     "false_allow_count": 0,
     "false_deny_legitimate": 0,
     "hold_count": 1,
-    "scenario_count": 12,
+    "scenario_count": 13,
     "unit_tests_failed": 0,
-    "unit_tests_passed": 26
+    "unit_tests_passed": 34
   },
   "passed": true,
   "scenarios": [
@@ -50,13 +50,13 @@
           "team_gpu_used": 0,
           "workload": "job-ok"
         },
-        "envelope_sha256": "sha256:3e66621d85b700cb6c91f2a61ff8da2b576aa2b39b23dbe88b66f7fd6bc464c9",
+        "envelope_sha256": "sha256:c6366d631075bcc3e81941ea25ff287587057cd7e423d9cc564fa3d27417bbc6",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "policy_allow",
         "scenario_id": "allow_golden",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "ALLOW"
       }
@@ -84,13 +84,13 @@
           "namespace": "team-a",
           "workload": "job-ok"
         },
-        "envelope_sha256": "sha256:5a0e3d4cafa8fc07070758633966059c99750da93cb5ab40fa5081b9a75d7685",
+        "envelope_sha256": "sha256:bff436a0ccfd2babe44b1b0f758c62fbab71189c882d0b16e42dd04924336896",
         "policy_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
         "policy_version": "none",
         "reason": "malformed_policy: policy is nil",
         "scenario_id": "nil_policy_fail_closed",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -118,13 +118,13 @@
           "namespace": "team-a",
           "workload": "job-ok"
         },
-        "envelope_sha256": "sha256:dbaf87de40a86f7d91f231ad113cf5c659980d2b0fb8d2e3277b858428a75f2f",
+        "envelope_sha256": "sha256:5d6b8037ebe3a40cbdab1a4936b801ec9b4ff92a941d49874c4a24e10fb826a3",
         "policy_sha256": "sha256:7f96d6c2d183a0e275c11b86802016361e1f7e7d7c0b6fa67d40d05e61e533d9",
         "policy_version": "invalid",
         "reason": "malformed_policy: policy.spec.version is empty",
         "scenario_id": "malformed_policy_empty_version",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -153,13 +153,13 @@
           "policy_version": "gpu-policy-1.0",
           "workload": "job-missing-owner"
         },
-        "envelope_sha256": "sha256:f21a0e57c4f74b43f6d7052522c2894e52e2b1bda8f12e72c62c35de658f8360",
+        "envelope_sha256": "sha256:3fb5fd8b9c1f50b936dbf069009bde0f23d5865f9dc44ddb18042f11f6cbaf82",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "missing_required_label: missing required label \"owner\"",
         "scenario_id": "missing_required_label_owner",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -188,13 +188,13 @@
           "policy_version": "gpu-policy-1.0",
           "workload": "job-bad-flavor"
         },
-        "envelope_sha256": "sha256:ebf8d099e46576b5f2647f912b389d29b825bd184cd783343add0b611c924664",
+        "envelope_sha256": "sha256:228fbf1ac9062d138664087e2f217adf0e22c9e7f1da1328c49dee276e5f7386",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "disallowed_flavor: flavor \"gpu-h100\" is not in allowedFlavors",
         "scenario_id": "disallowed_flavor",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -225,13 +225,13 @@
           "policy_version": "gpu-policy-1.0",
           "workload": "job-ok"
         },
-        "envelope_sha256": "sha256:0afc1557ac7d3d4dc5b52a23952cc451ddf7ab2daad11dd87ad70d391814fb93",
+        "envelope_sha256": "sha256:3978a78ab1aa23393a0173625f171ac49fae3aa4e94170c44682fbdac507166d",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
         "scenario_id": "over_namespace_quota_hold",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -262,13 +262,13 @@
           "policy_version": "gpu-policy-1.0",
           "workload": "job-ok"
         },
-        "envelope_sha256": "sha256:e1b2cb9ec59c87418ea1a8b9358466b60ef2aa15aee153462dfc6e95ef3c5907",
+        "envelope_sha256": "sha256:c53f5ad2b01f23e871a2e1c3f75cfc29f258790157f6688031c5380504307eca",
         "policy_sha256": "sha256:bb9f4e91d1a8d6149f7ed25ea4022135b506205f20ab7a24af8d8f8bf29d1b6e",
         "policy_version": "gpu-policy-1.0",
         "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
         "scenario_id": "over_namespace_quota_deny",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -278,7 +278,7 @@
       "expected": "DENY",
       "actual": "DENY",
       "match": true,
-      "reason": "disallowed_image_registry: image registry \"evil.example/\" is not allowed",
+      "reason": "disallowed_image_registry: image \"evil.example/x:latest\" does not match allowedImageRegistries",
       "envelope": {
         "acs_disposition": "DENY",
         "blocked_call_id": "disallowed_image_registry",
@@ -296,16 +296,51 @@
           "namespace": "team-a",
           "policy_version": "gpu-policy-1.0",
           "rejected_image": "evil.example/x:latest",
-          "rejected_registry": "evil.example/",
           "workload": "job-bad-registry"
         },
-        "envelope_sha256": "sha256:5878399aa2433dac6b8a2b6c8981bdbc84b89cdf32b15ae1e815da301f791602",
+        "envelope_sha256": "sha256:c1e1e729e7df4b18e8d30208c8ff5a559c99c972a1ffbce3d594cc17b3a57364",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
-        "reason": "disallowed_image_registry: image registry \"evil.example/\" is not allowed",
+        "reason": "disallowed_image_registry: image \"evil.example/x:latest\" does not match allowedImageRegistries",
         "scenario_id": "disallowed_image_registry",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "disallowed_ghcr_evil_prefix",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "disallowed_image_registry: image \"ghcr.io/evil/x:latest\" does not match allowedImageRegistries",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "disallowed_ghcr_evil_prefix",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "ghcr.io/evil/x:latest"
+          ],
+          "inputs_digest": "sha256:ffb4786f55cee08231a71f53f5c1f324a9ae2b08a894a8276ebb8aa17da9b97b",
+          "namespace": "team-a",
+          "policy_version": "gpu-policy-1.0",
+          "rejected_image": "ghcr.io/evil/x:latest",
+          "workload": "job-ghcr-evil"
+        },
+        "envelope_sha256": "sha256:8ac62097e45004b1e119c43c067ac1e3f3477d4a9c53b37804b6890514443d20",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "disallowed_image_registry: image \"ghcr.io/evil/x:latest\" does not match allowedImageRegistries",
+        "scenario_id": "disallowed_ghcr_evil_prefix",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -341,13 +376,13 @@
           "team_gpu_used": 0,
           "workload": "job-over-hours"
         },
-        "envelope_sha256": "sha256:978c2421c5ac5faf07818a10e12df6d17dc2ba7ff61339d4bc71a6e4493d8891",
+        "envelope_sha256": "sha256:fc61d4321eef05aaf476dc3b153fd54b1249963f68ab36ba83c7051e1e06974c",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "over_gpu_hours: GPU-hours 20.00 exceed max 8.00",
         "scenario_id": "over_gpu_hours",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -385,13 +420,13 @@
           "team_gpu_used": 0,
           "workload": "job-over-budget"
         },
-        "envelope_sha256": "sha256:68026485846cb03195cc905e0324a01c6a881482cdc0c96809df47adec6c4242",
+        "envelope_sha256": "sha256:3e2c0e0adab5bc5d54ce858ceaceee3aef2a059b54695bb298a39d7ad3881302",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "over_budget: estimated cost 6000000 micro-USD exceeds budget 4000000",
         "scenario_id": "over_budget",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -425,13 +460,13 @@
           "team_gpu_used": 0,
           "workload": "job-no-hours"
         },
-        "envelope_sha256": "sha256:10955aa8c682b85b7b7017d2e4fd7968621a77cdeda415bfc76590ca86aec579",
+        "envelope_sha256": "sha256:db48afb2cde38d2d2271bee3fffa7ed5737ba1d0cb9b47a9ab7e67b6399b91ae",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "undecidable: maxGPUHoursPerWorkload set but estimated-hours annotation missing or invalid",
         "scenario_id": "missing_estimated_hours_fail_closed",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
@@ -460,17 +495,17 @@
           "policy_version": "gpu-policy-1.0",
           "workload": "job-unknown-ns"
         },
-        "envelope_sha256": "sha256:ac9b20d5dedbd26bb17931e19832029324d93bfe6535875964e5ea84cf64f13f",
+        "envelope_sha256": "sha256:b142fc6f6ad3d3839601375dc0fcb8b7de4eb379e6e531e26299ed4598c87e49",
         "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
         "policy_version": "gpu-policy-1.0",
         "reason": "namespace_not_in_quota_map: namespace \"unknown-ns\" has no GPU quota entry",
         "scenario_id": "namespace_not_in_quota_map",
         "schema_version": "1.0.0",
-        "timestamp": "2026-10-22T09:02:38Z",
+        "timestamp": "2026-10-22T10:21:44Z",
         "trace_id": "unit-corpus",
         "verdict": "BLOCK"
       }
     }
   ],
-  "suite_time_ms": 1417
+  "suite_time_ms": 1967
 }

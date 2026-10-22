@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	"github.com/justrunme/gpu-admission-kueue/api/v1alpha1"
+	"github.com/justrunme/gpu-admission-kueue/internal/evidence"
 	"github.com/justrunme/gpu-admission-kueue/internal/kueueapi"
 	"github.com/justrunme/gpu-admission-kueue/internal/policy"
 )
@@ -336,5 +337,82 @@ func TestReconcileUnparseableGPUQuantityRejects(t *testing.T) {
 	msg := m["message"].(string)
 	if !strings.Contains(msg, "undecidable") {
 		t.Fatalf("message=%v", msg)
+	}
+}
+
+func readyWorkload(name, teamLabelKey, teamVal string) *unstructured.Unstructured {
+	wl := baseWorkload()
+	wl.SetName(name)
+	wl.SetUID(types.UID("uid-" + name))
+	_ = unstructured.SetNestedSlice(wl.Object, []any{
+		map[string]any{"name": "gpu-admission", "state": "Ready"},
+	}, "status", "admissionChecks")
+	podSets, _, _ := unstructured.NestedSlice(wl.Object, "spec", "podSets")
+	ps := podSets[0].(map[string]any)
+	template := ps["template"].(map[string]any)
+	meta := template["metadata"].(map[string]any)
+	labels := meta["labels"].(map[string]any)
+	delete(labels, "team")
+	labels[teamLabelKey] = teamVal
+	_ = unstructured.SetNestedSlice(wl.Object, podSets, "spec", "podSets")
+	return wl
+}
+
+func TestCollectUsageUsesPolicyTeamLabelKey(t *testing.T) {
+	s := testScheme(t)
+	other := readyWorkload("job-other", "org", "platform")
+	current := baseWorkload()
+	current.SetUID("uid-current")
+	c := fake.NewClientBuilder().WithScheme(s).WithObjects(other, current, baseFlavor()).Build()
+	r := &WorkloadAdmissionReconciler{Client: c, AdmissionCheckName: "gpu-admission"}
+	usage, err := r.collectUsage(context.Background(), current, "org")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if usage.ByTeam["platform"] != 1 {
+		t.Fatalf("expected team key org=platform usage 1, got %+v", usage.ByTeam)
+	}
+	if usage.ByTeam["alpha"] != 0 {
+		t.Fatalf("must not use hardcoded 'team' label, got %+v", usage.ByTeam)
+	}
+}
+
+func TestCollectUsageExcludesFinishedAndInactive(t *testing.T) {
+	s := testScheme(t)
+	finished := readyWorkload("job-finished", "team", "alpha")
+	_ = unstructured.SetNestedSlice(finished.Object, []any{
+		map[string]any{"type": "Finished", "status": "True"},
+	}, "status", "conditions")
+	inactive := readyWorkload("job-inactive", "team", "alpha")
+	active := false
+	_ = unstructured.SetNestedField(inactive.Object, active, "spec", "active")
+	live := readyWorkload("job-live", "team", "alpha")
+	current := baseWorkload()
+	current.SetUID("uid-current")
+	c := fake.NewClientBuilder().WithScheme(s).WithObjects(finished, inactive, live, current, baseFlavor()).Build()
+	r := &WorkloadAdmissionReconciler{Client: c, AdmissionCheckName: "gpu-admission"}
+	usage, err := r.collectUsage(context.Background(), current, "team")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if usage.ByNamespace["team-a"] != 1 {
+		t.Fatalf("expected only live workload counted, got ns=%v team=%v", usage.ByNamespace, usage.ByTeam)
+	}
+}
+
+func TestEvidenceConfigMapNameNoTrailingDash(t *testing.T) {
+	wl := baseWorkload()
+	wl.SetUID("uid-1")
+	env := evidence.Envelope{EnvelopeSHA256: "sha256:abc", Timestamp: "2026-01-01T00:00:00Z"}
+	name := evidenceConfigMapName(wl, env)
+	if strings.HasSuffix(name, "-") {
+		t.Fatalf("name must not end with dash: %q", name)
+	}
+	if !strings.HasPrefix(name, "ev-") || len(name) > 63 {
+		t.Fatalf("unexpected name %q", name)
+	}
+	other := evidenceConfigMapName(wl, evidence.Envelope{EnvelopeSHA256: "sha256:def", Timestamp: "2026-01-01T00:00:01Z"})
+	if name == other {
+		t.Fatal("distinct envelopes must produce distinct ConfigMap names")
 	}
 }

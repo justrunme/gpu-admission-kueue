@@ -61,6 +61,11 @@ func Corpus() []Scenario {
 	badReg.Name = "job-bad-registry"
 	badReg.Images = []string{"evil.example/x:latest"}
 
+	// Prefix path escape: allowlist "ghcr.io/acme/" must not admit "ghcr.io/evil/...".
+	ghcrEvil := allowIn
+	ghcrEvil.Name = "job-ghcr-evil"
+	ghcrEvil.Images = []string{"ghcr.io/evil/x:latest"}
+
 	overHours := allowIn
 	overHours.Name = "job-over-hours"
 	overHours.EstimatedHrs = 20
@@ -87,6 +92,7 @@ func Corpus() []Scenario {
 		{ID: "over_namespace_quota_hold", Policy: base, Input: allowIn, Usage: overQuotaUsage, Expected: DecisionHold},
 		{ID: "over_namespace_quota_deny", Policy: &noHold, Input: allowIn, Usage: overQuotaUsage, Expected: DecisionDeny},
 		{ID: "disallowed_image_registry", Policy: base, Input: badReg, Usage: workloadinfo.NewUsageSnapshot(), Expected: DecisionDeny},
+		{ID: "disallowed_ghcr_evil_prefix", Policy: base, Input: ghcrEvil, Usage: workloadinfo.NewUsageSnapshot(), Expected: DecisionDeny},
 		{ID: "over_gpu_hours", Policy: base, Input: overHours, Usage: workloadinfo.NewUsageSnapshot(), Expected: DecisionDeny},
 		{ID: "over_budget", Policy: base, Input: overBudget, Usage: workloadinfo.NewUsageSnapshot(), Expected: DecisionDeny},
 		{ID: "missing_estimated_hours_fail_closed", Policy: base, Input: noHours, Usage: workloadinfo.NewUsageSnapshot(), Expected: DecisionDeny},

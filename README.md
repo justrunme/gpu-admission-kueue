@@ -61,7 +61,7 @@ kubectl -n team-a get workloads -o yaml
 kubectl -n gpu-admission-system get configmaps -l gpu-admission.justrunme.com/evidence -o yaml
 ```
 
-Full negative suite (controller down, malformed policy, over quota, missing labels, disallowed flavor, bad registry):
+Full suite (`allow_golden` plus negatives: controller down, malformed policy, over quota, missing labels, disallowed flavor, bad registry, `ghcr.io/evil` prefix escape):
 
 ```bash
 make e2e

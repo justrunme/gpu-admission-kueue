@@ -16,6 +16,14 @@ spec:
         app.kubernetes.io/name: gpu-admission-controller
     spec:
       serviceAccountName: gpu-admission-controller
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: controller
           image: gpu-admission-controller:e2e
@@ -23,12 +31,20 @@ spec:
           args:
             - --admission-check-name=gpu-admission
             - --health-probe-bind-address=:8081
-            - --metrics-bind-address=:8080
+            # Metrics are localhost-only; not exposed via Service.
+            - --metrics-bind-address=127.0.0.1:8080
           ports:
             - name: health
               containerPort: 8081
-            - name: metrics
-              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           readinessProbe:
             httpGet:
               path: /readyz

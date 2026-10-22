@@ -62,6 +62,50 @@ wait_workload_check_state() {
   return 1
 }
 
+# Rejection must carry the expected reason prefix in the check message and/or
+# an evidence ConfigMap envelope for this Job.
+wait_rejected_reason() {
+  local ns="$1" job="$2" reason_prefix="$3" timeout="${4:-120}"
+  local end=$((SECONDS + timeout)) state="" rc=1
+  while (( SECONDS < end )); do
+    set +e
+    state="$(kubectl -n "$ns" get workloads -o json 2>/dev/null | python3 "$HELPER" "$job" gpu-admission "$reason_prefix" 2>/tmp/e2e-reason.err)"
+    rc=$?
+    set -e
+    if [[ "$rc" -eq 0 && ( "$state" == "Rejected" || "$state" == "REJECTED_EFFECTIVE" ) ]]; then
+      printf '%s\n' "$state"
+      return 0
+    fi
+    # Message may be reduced to "Previously: Rejected" — require evidence envelope.
+    if [[ "$state" == "Rejected" || "$state" == "REJECTED_EFFECTIVE" ]] && evidence_has_reason "$job" "$reason_prefix"; then
+      printf '%s\n' "$state"
+      return 0
+    fi
+    sleep 2
+  done
+  dump_e2e_diagnostics "$ns"
+  printf 'timeout want=Rejected reason=%s last=%s\n' "$reason_prefix" "${state:-none}"
+  return 1
+}
+
+evidence_has_reason() {
+  local job="$1" reason_prefix="$2"
+  kubectl -n gpu-admission-system get configmaps -l "gpu-admission.justrunme.com/evidence=true,workload=${job}" -o json 2>/dev/null | python3 -c '
+import json,sys
+pref=sys.argv[1]
+doc=json.load(sys.stdin)
+for cm in doc.get("items",[]):
+    raw=(cm.get("data") or {}).get("envelope.json") or ""
+    if not raw: continue
+    try: env=json.loads(raw)
+    except Exception: continue
+    reason=env.get("reason") or ""
+    if reason.startswith(pref) or pref in reason:
+        sys.exit(0)
+sys.exit(1)
+' "$reason_prefix"
+}
+
 cleanup_jobs() {
   kubectl -n team-a delete job --all --wait=false 2>/dev/null || true
   kubectl -n team-b delete job --all --wait=false 2>/dev/null || true
@@ -74,15 +118,19 @@ if wait_workload_check_state team-a allow-train Ready 120 >/tmp/e2e-state.txt; t
 
 cleanup_jobs
 kubectl apply -f demo/jobs/missing-labels-job.yaml
-if wait_workload_check_state team-a missing-labels Rejected 120 >/tmp/e2e-state.txt; then pass missing_labels; else fail "missing_labels:$(cat /tmp/e2e-state.txt)"; fi
+if wait_rejected_reason team-a missing-labels "missing_required_label" 120 >/tmp/e2e-state.txt; then pass missing_labels; else fail "missing_labels:$(cat /tmp/e2e-state.txt)"; fi
 
 cleanup_jobs
 kubectl apply -f demo/jobs/disallowed-flavor-job.yaml
-if wait_workload_check_state team-a disallowed-flavor Rejected 120 >/tmp/e2e-state.txt; then pass disallowed_flavor; else fail "disallowed_flavor:$(cat /tmp/e2e-state.txt)"; fi
+if wait_rejected_reason team-a disallowed-flavor "disallowed_flavor" 120 >/tmp/e2e-state.txt; then pass disallowed_flavor; else fail "disallowed_flavor:$(cat /tmp/e2e-state.txt)"; fi
 
 cleanup_jobs
 kubectl apply -f demo/jobs/bad-registry-job.yaml
-if wait_workload_check_state team-a bad-registry Rejected 120 >/tmp/e2e-state.txt; then pass bad_registry; else fail "bad_registry:$(cat /tmp/e2e-state.txt)"; fi
+if wait_rejected_reason team-a bad-registry "disallowed_image_registry" 120 >/tmp/e2e-state.txt; then pass bad_registry; else fail "bad_registry:$(cat /tmp/e2e-state.txt)"; fi
+
+cleanup_jobs
+kubectl apply -f demo/jobs/ghcr-evil-job.yaml
+if wait_rejected_reason team-a ghcr-evil "disallowed_image_registry" 120 >/tmp/e2e-state.txt; then pass ghcr_evil_prefix; else fail "ghcr_evil_prefix:$(cat /tmp/e2e-state.txt)"; fi
 
 cleanup_jobs
 cat <<'YAML' | kubectl apply -f -
@@ -134,8 +182,13 @@ spec:
           requests: {cpu: 50m, memory: 64Mi, nvidia.com/gpu: "1"}
           limits: {nvidia.com/gpu: "1"}
 YAML
-wait_workload_check_state team-a prime-a Ready 120 >/dev/null || true
-wait_workload_check_state team-a prime-b Ready 120 >/dev/null || true
+if ! wait_workload_check_state team-a prime-a Ready 120 >/tmp/e2e-prime-a.txt; then
+  fail "prime_a_ready:$(cat /tmp/e2e-prime-a.txt)"
+  # Still attempt over-quota to keep diagnostics useful, but suite already failed.
+fi
+if ! wait_workload_check_state team-a prime-b Ready 120 >/tmp/e2e-prime-b.txt; then
+  fail "prime_b_ready:$(cat /tmp/e2e-prime-b.txt)"
+fi
 kubectl apply -f demo/jobs/over-quota-job.yaml
 if wait_workload_check_state team-a over-quota Retry 120 >/tmp/e2e-state.txt; then pass over_quota_hold; else fail "over_quota_hold:$(cat /tmp/e2e-state.txt)"; fi
 
@@ -154,10 +207,11 @@ spec:
   maxBudgetUSDMicros: 1000
 YAML
 kubectl apply -f demo/jobs/allow-job.yaml
-if wait_workload_check_state team-a allow-train Rejected 120 >/tmp/e2e-state.txt; then pass malformed_policy; else fail "malformed_policy:$(cat /tmp/e2e-state.txt)"; fi
+if wait_rejected_reason team-a allow-train "malformed_policy" 120 >/tmp/e2e-state.txt; then pass malformed_policy; else fail "malformed_policy:$(cat /tmp/e2e-state.txt)"; fi
 kubectl apply -f config/samples/gpuadmissionpolicy.yaml
 
 # Fail-closed when the in-cluster controller is down (standard path).
+# Require: Workload exists, quota reserved, check Pending, and not Admitted.
 cleanup_jobs
 if [[ "${GPU_ADMISSION_KIND_WORKAROUNDS:-}" == "1" ]]; then
   kill "${HOST_CTRL_PID}" 2>/dev/null || true
@@ -167,13 +221,45 @@ else
   kubectl -n gpu-admission-system wait --for=delete pod -l app.kubernetes.io/name=gpu-admission-controller --timeout=60s || true
 fi
 kubectl apply -f demo/jobs/allow-job.yaml
-sleep 20
-state="$(kubectl -n team-a get workloads -o json | python3 "$HELPER" allow-train gpu-admission || true)"
-admitted="$(kubectl -n team-a get workloads -o json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(any(c.get("type")=="Admitted" and c.get("status")=="True" for w in d.get("items",[]) for c in w.get("status",{}).get("conditions") or []))')"
-if [[ "$admitted" == "True" || "$state" == "Ready" ]]; then
-  fail "controller_down_fail_closed:state=$state admitted=$admitted"
-else
+controller_down_ok=false
+found=false; quota=false; pending=false; admitted=false
+end=$((SECONDS + 90))
+while (( SECONDS < end )); do
+  eval "$(kubectl -n team-a get workloads -o json 2>/dev/null | python3 -c '
+import json,sys
+job,check="allow-train","gpu-admission"
+def match(w, job):
+    for o in w.get("metadata", {}).get("ownerReferences") or []:
+        if o.get("kind")=="Job" and o.get("name")==job: return True
+    labels=w.get("metadata",{}).get("labels") or {}
+    return labels.get("batch.kubernetes.io/job-name")==job or labels.get("job-name")==job
+doc=json.load(sys.stdin)
+found=quota=pending=admitted=False
+for w in doc.get("items",[]):
+    if not match(w, job): continue
+    found=True
+    st=w.get("status") or {}
+    if st.get("admission"): quota=True
+    for c in st.get("conditions") or []:
+        if c.get("type")=="QuotaReserved" and c.get("status")=="True": quota=True
+        if c.get("type")=="Admitted" and c.get("status")=="True": admitted=True
+    for c in st.get("admissionChecks") or []:
+        if c.get("name")==check and c.get("state")=="Pending": pending=True
+print("found="+str(found).lower())
+print("quota="+str(quota).lower())
+print("pending="+str(pending).lower())
+print("admitted="+str(admitted).lower())
+')"
+  if [[ "$found" == "true" && "$quota" == "true" && "$pending" == "true" && "$admitted" == "false" ]]; then
+    controller_down_ok=true
+    break
+  fi
+  sleep 2
+done
+if [[ "$controller_down_ok" == "true" ]]; then
   pass controller_down_fail_closed
+else
+  fail "controller_down_fail_closed:found=${found} quota=${quota} pending=${pending} admitted=${admitted}"
 fi
 
 pass_n=$(wc -l <"$TMP_PASSES" | tr -d ' ')

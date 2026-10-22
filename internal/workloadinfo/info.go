@@ -2,6 +2,8 @@
 package workloadinfo
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -43,6 +45,8 @@ func NewUsageSnapshot() UsageSnapshot {
 }
 
 // ParseEstimatedHours reads the estimated-hours annotation; missing is ok.
+// Present values must be finite and > 0 (fail-closed); negative, NaN, Inf, and
+// zero are rejected so budget / GPU-hour checks cannot be bypassed.
 func ParseEstimatedHours(annotations map[string]string) (float64, bool, error) {
 	if annotations == nil {
 		return 0, false, nil
@@ -55,25 +59,28 @@ func ParseEstimatedHours(annotations map[string]string) (float64, bool, error) {
 	if err != nil {
 		return 0, true, err
 	}
+	if math.IsNaN(v) || math.IsInf(v, 0) || v <= 0 {
+		return 0, true, fmt.Errorf("estimated-hours must be a finite number > 0, got %q", raw)
+	}
 	return v, true, nil
 }
 
-// ImageRegistry returns the registry prefix before the first '/' after host,
-// or the full image when no slash is present.
-func ImageRegistry(image string) string {
+// ImageMatchesAllowlist reports whether the full image reference is allowed by
+// any allowlist entry. Entries are prefixes of the full reference (not host-only),
+// so "ghcr.io/acme/" matches "ghcr.io/acme/app:1" but not "ghcr.io/evil/x".
+func ImageMatchesAllowlist(image string, allow []string) bool {
 	image = strings.TrimSpace(image)
 	if image == "" {
-		return ""
+		return false
 	}
-	// strip digest/tag handling: registry/repo:tag or registry/repo@sha
-	rest := image
-	if i := strings.Index(rest, "/"); i > 0 {
-		host := rest[:i]
-		// dockerhub-style "library/ubuntu" has no dots/colon in first segment
-		if !strings.Contains(host, ".") && !strings.Contains(host, ":") && host != "localhost" {
-			return "docker.io/"
+	for _, a := range allow {
+		a = strings.TrimSpace(a)
+		if a == "" {
+			continue
 		}
-		return host + "/"
+		if strings.HasPrefix(image, a) {
+			return true
+		}
 	}
-	return "docker.io/"
+	return false
 }

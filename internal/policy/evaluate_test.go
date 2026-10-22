@@ -124,6 +124,18 @@ func TestEvaluateDisallowedRegistry(t *testing.T) {
 	}
 }
 
+func TestEvaluateDisallowedGHCREvilPrefix(t *testing.T) {
+	in := baseInput()
+	in.Images = []string{"ghcr.io/evil/x:latest"}
+	d := policy.Evaluate(basePolicy(), in, workloadinfo.NewUsageSnapshot())
+	if d.Decision != policy.DecisionDeny {
+		t.Fatalf("expected DENY for ghcr.io/evil under ghcr.io/acme/ allowlist, got %+v", d)
+	}
+	if want := "disallowed_image_registry"; len(d.Reason) < len(want) || d.Reason[:len(want)] != want {
+		t.Fatalf("reason %q", d.Reason)
+	}
+}
+
 func TestEvaluateOverGPUHours(t *testing.T) {
 	in := baseInput()
 	in.EstimatedHrs = 20

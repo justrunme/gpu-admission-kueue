@@ -3,20 +3,19 @@
 This file is **generated** from `results/results.json` by `go run ./cmd/evidencegen`.
 Do not edit numbers by hand; re-run unit/e2e and regenerate.
 
-All claims below are **on this corpus of 12 scenarios** only. They do not imply general cluster safety.
+All claims below are **on this corpus of 13 scenarios** only. They do not imply general cluster safety.
 
 ## Run metrics
 
-- Scope: on this corpus of 12 scenarios
-- Generated at: `2026-10-22T09:02:39Z`
+- Scope: on this corpus of 13 scenarios
+- Generated at: `2026-10-22T10:21:46Z`
 - Commit: `unknown`
 - Corpus passed: `true`
-- Suite time (ms): `1417`
-- Scenario count: `12`
-- ALLOW: `1` · DENY: `10` · HOLD: `1`
+- Scenario count: `13`
+- ALLOW: `1` · DENY: `11` · HOLD: `1`
 - False-ALLOW count: `0` (must be 0)
 - False-DENY (legitimate) count: `0`
-- Unit tests: passed `26`, failed `0`
+- Suite time / unit-test counts: see CI `corpus-results` artifact (not claimed from local runs)
 - E2E: skipped (`unit corpus only; e2e recorded separately by test/e2e when run`)
 
 ## Per-scenario table
@@ -30,7 +29,8 @@ All claims below are **on this corpus of 12 scenarios** only. They do not imply 
 | `disallowed_flavor` | DENY | DENY | yes | disallowed_flavor: flavor "gpu-h100" is not in allowedFlavors |
 | `over_namespace_quota_hold` | HOLD | HOLD | yes | over_namespace_quota: namespace "team-a" GPU quota exceeded: used=4 request=1 limit=4 |
 | `over_namespace_quota_deny` | DENY | DENY | yes | over_namespace_quota: namespace "team-a" GPU quota exceeded: used=4 request=1 limit=4 |
-| `disallowed_image_registry` | DENY | DENY | yes | disallowed_image_registry: image registry "evil.example/" is not allowed |
+| `disallowed_image_registry` | DENY | DENY | yes | disallowed_image_registry: image "evil.example/x:latest" does not match allowedImageRegistries |
+| `disallowed_ghcr_evil_prefix` | DENY | DENY | yes | disallowed_image_registry: image "ghcr.io/evil/x:latest" does not match allowedImageRegistries |
 | `over_gpu_hours` | DENY | DENY | yes | over_gpu_hours: GPU-hours 20.00 exceed max 8.00 |
 | `over_budget` | DENY | DENY | yes | over_budget: estimated cost 6000000 micro-USD exceeds budget 4000000 |
 | `missing_estimated_hours_fail_closed` | DENY | DENY | yes | undecidable: maxGPUHoursPerWorkload set but estimated-hours annotation missing or invalid |
@@ -41,5 +41,4 @@ All claims below are **on this corpus of 12 scenarios** only. They do not imply 
 - Claims apply **on this corpus** only.
 - Kind demo advertises `nvidia.com/gpu` as an extended resource; it does not require physical GPUs.
 - Evidence envelopes use ASC-compatible `schema_version` `1.0.0` with `details.decision` and `details.inputs_digest`.
-- Renderer wall clock: `2026-10-22T09:02:39Z`
 

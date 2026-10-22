@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type resultsFile struct {
@@ -90,12 +89,18 @@ func render(r resultsFile) string {
 	b.WriteString(fmt.Sprintf("- Generated at: `%s`\n", r.GeneratedAt))
 	b.WriteString(fmt.Sprintf("- Commit: `%s`\n", r.CommitSHA))
 	b.WriteString(fmt.Sprintf("- Corpus passed: `%t`\n", r.Passed))
-	b.WriteString(fmt.Sprintf("- Suite time (ms): `%d`\n", r.SuiteTimeMs))
 	b.WriteString(fmt.Sprintf("- Scenario count: `%d`\n", r.Metrics.ScenarioCount))
 	b.WriteString(fmt.Sprintf("- ALLOW: `%d` · DENY: `%d` · HOLD: `%d`\n", r.Metrics.AllowCount, r.Metrics.DenyCount, r.Metrics.HoldCount))
 	b.WriteString(fmt.Sprintf("- False-ALLOW count: `%d` (must be 0)\n", r.Metrics.FalseAllowCount))
 	b.WriteString(fmt.Sprintf("- False-DENY (legitimate) count: `%d`\n", r.Metrics.FalseDenyLegitimate))
-	b.WriteString(fmt.Sprintf("- Unit tests: passed `%d`, failed `%d`\n", r.Metrics.UnitTestsPassed, r.Metrics.UnitTestsFailed))
+	// Volatile local timings / unit counts live in results/results.json. Only claim
+	// them when running under CI (Actions sets CI=true); local docs omit them.
+	if os.Getenv("CI") == "true" {
+		b.WriteString(fmt.Sprintf("- Suite time (ms): `%d` (from CI corpus run)\n", r.SuiteTimeMs))
+		b.WriteString(fmt.Sprintf("- Unit tests: passed `%d`, failed `%d` (from CI corpus run)\n", r.Metrics.UnitTestsPassed, r.Metrics.UnitTestsFailed))
+	} else {
+		b.WriteString("- Suite time / unit-test counts: see CI `corpus-results` artifact (not claimed from local runs)\n")
+	}
 	if r.Metrics.E2ESkipped {
 		b.WriteString(fmt.Sprintf("- E2E: skipped (`%s`)\n", r.Metrics.E2ESkipReason))
 	} else if r.Metrics.E2EPassed != nil {
@@ -116,7 +121,6 @@ func render(r resultsFile) string {
 	b.WriteString("- Claims apply **on this corpus** only.\n")
 	b.WriteString("- Kind demo advertises `nvidia.com/gpu` as an extended resource; it does not require physical GPUs.\n")
 	b.WriteString("- Evidence envelopes use ASC-compatible `schema_version` `1.0.0` with `details.decision` and `details.inputs_digest`.\n")
-	b.WriteString(fmt.Sprintf("- Renderer wall clock: `%s`\n", time.Now().UTC().Format(time.RFC3339)))
 	if len(r.E2E) > 0 {
 		b.WriteString("\n## Kind e2e (this run)\n\n")
 		b.WriteString("- Scope: **on this e2e suite**\n")
