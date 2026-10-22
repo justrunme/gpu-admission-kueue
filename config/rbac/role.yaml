@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpu-admission-controller
+  namespace: gpu-admission-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gpu-admission-controller
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [gpu-admission.justrunme.com]
+    resources: [gpuadmissionpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [gpu-admission.justrunme.com]
+    resources: [gpuadmissionpolicies/status]
+    verbs: [get, update, patch]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [admissionchecks]
+    verbs: [get, list, watch]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [admissionchecks/status]
+    verbs: [get, update, patch]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [workloads]
+    verbs: [get, list, watch]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [workloads/status]
+    verbs: [get, update, patch]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [resourceflavors]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gpu-admission-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gpu-admission-controller
+subjects:
+  - kind: ServiceAccount
+    name: gpu-admission-controller
+    namespace: gpu-admission-system
+---
+# Evidence ConfigMaps are namespaced to gpu-admission-system only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gpu-admission-evidence
+  namespace: gpu-admission-system
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gpu-admission-evidence
+  namespace: gpu-admission-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gpu-admission-evidence
+subjects:
+  - kind: ServiceAccount
+    name: gpu-admission-controller
+    namespace: gpu-admission-system
