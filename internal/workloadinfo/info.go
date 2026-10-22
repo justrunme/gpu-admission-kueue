@@ -66,8 +66,11 @@ func ParseEstimatedHours(annotations map[string]string) (float64, bool, error) {
 }
 
 // ImageMatchesAllowlist reports whether the full image reference is allowed by
-// any allowlist entry. Entries are prefixes of the full reference (not host-only),
-// so "ghcr.io/acme/" matches "ghcr.io/acme/app:1" but not "ghcr.io/evil/x".
+// any allowlist entry, matching only on a path boundary:
+//   - entry ending with "/" is a prefix of the full reference (e.g. "ghcr.io/acme/")
+//   - entry without "/" is an exact registry host (or path segment): image must equal
+//     the entry or begin with entry+"/" — so "registry.example.com" does not match
+//     "registry.example.com.evil.io/x".
 func ImageMatchesAllowlist(image string, allow []string) bool {
 	image = strings.TrimSpace(image)
 	if image == "" {
@@ -78,7 +81,13 @@ func ImageMatchesAllowlist(image string, allow []string) bool {
 		if a == "" {
 			continue
 		}
-		if strings.HasPrefix(image, a) {
+		if strings.HasSuffix(a, "/") {
+			if strings.HasPrefix(image, a) {
+				return true
+			}
+			continue
+		}
+		if image == a || strings.HasPrefix(image, a+"/") {
 			return true
 		}
 	}

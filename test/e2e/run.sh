@@ -80,7 +80,7 @@ wait_rejected_reason() {
       return 0
     fi
     # Message may be reduced to "Previously: Rejected" — require evidence envelope.
-    if [[ "$state" == "Rejected" || "$state" == "REJECTED_EFFECTIVE" ]] && evidence_has_reason "$job" "$reason_prefix"; then
+    if [[ "$state" == "Rejected" || "$state" == "REJECTED_EFFECTIVE" ]] && evidence_has_reason "$ns" "$job" "$reason_prefix"; then
       printf '%s\n' "$state"
       return 0
     fi
@@ -91,22 +91,52 @@ wait_rejected_reason() {
   return 1
 }
 
+# Evidence lookup: match ConfigMaps by workload namespace + UID; reason via startswith.
 evidence_has_reason() {
-  local job="$1" reason_prefix="$2"
-  kubectl -n gpu-admission-system get configmaps -l "gpu-admission.justrunme.com/evidence=true,workload=${job}" -o json 2>/dev/null | python3 -c '
-import json,sys
-pref=sys.argv[1]
-doc=json.load(sys.stdin)
-for cm in doc.get("items",[]):
-    raw=(cm.get("data") or {}).get("envelope.json") or ""
-    if not raw: continue
-    try: env=json.loads(raw)
-    except Exception: continue
-    reason=env.get("reason") or ""
-    if reason.startswith(pref) or pref in reason:
+  local ns="$1" job="$2" reason_prefix="$3"
+  python3 - "$ns" "$job" "$reason_prefix" <<'PY'
+import json, subprocess, sys
+
+ns, job, pref = sys.argv[1:4]
+
+def match_workload(w, job):
+    for o in w.get("metadata", {}).get("ownerReferences") or []:
+        if o.get("kind") == "Job" and o.get("name") == job:
+            return True
+    labels = w.get("metadata", {}).get("labels") or {}
+    return labels.get("batch.kubernetes.io/job-name") == job or labels.get("job-name") == job
+
+wls = json.loads(subprocess.check_output(["kubectl", "-n", ns, "get", "workloads", "-o", "json"]))
+uid = None
+for w in wls.get("items", []):
+    if match_workload(w, job):
+        uid = w.get("metadata", {}).get("uid")
+        break
+if not uid:
+    sys.exit(1)
+
+cms = json.loads(subprocess.check_output([
+    "kubectl", "-n", "gpu-admission-system", "get", "configmaps",
+    "-l", "gpu-admission.justrunme.com/evidence=true", "-o", "json",
+]))
+for cm in cms.get("items", []):
+    labels = (cm.get("metadata") or {}).get("labels") or {}
+    if labels.get("workload-uid") != uid:
+        continue
+    if labels.get("workload-ns") != ns:
+        continue
+    raw = (cm.get("data") or {}).get("envelope.json") or ""
+    if not raw:
+        continue
+    try:
+        env = json.loads(raw)
+    except Exception:
+        continue
+    reason = env.get("reason") or ""
+    if reason.startswith(pref):
         sys.exit(0)
 sys.exit(1)
-' "$reason_prefix"
+PY
 }
 
 cleanup_jobs() {

@@ -62,7 +62,7 @@ def main() -> int:
             elif "Previously: Retry" in msg:
                 out_state = "RETRY_EFFECTIVE"
             if reason_prefix:
-                ok = msg.startswith(reason_prefix) or reason_prefix in msg
+                ok = msg.startswith(reason_prefix)
                 if out_state in ("Rejected", "REJECTED_EFFECTIVE") and ok:
                     print(out_state)
                     return 0

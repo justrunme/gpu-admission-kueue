@@ -63,3 +63,19 @@ func TestImageMatchesAllowlistPrefixPath(t *testing.T) {
 		t.Fatal("expected registry.example.com image allowed")
 	}
 }
+
+func TestImageMatchesAllowlistHostBoundaryRejectsEvilSubdomain(t *testing.T) {
+	// Without trailing slash: exact host / path-boundary match only.
+	allow := []string{"registry.example.com"}
+	if !workloadinfo.ImageMatchesAllowlist("registry.example.com/ml/train:1.0", allow) {
+		t.Fatal("expected exact-host allow for registry.example.com/...")
+	}
+	if workloadinfo.ImageMatchesAllowlist("registry.example.com.evil.io/x", allow) {
+		t.Fatal("registry.example.com.evil.io must be rejected (no path boundary)")
+	}
+	// With trailing slash: still must not match evil subdomain.
+	allowSlash := []string{"registry.example.com/"}
+	if workloadinfo.ImageMatchesAllowlist("registry.example.com.evil.io/x", allowSlash) {
+		t.Fatal("trailing-slash prefix must not match evil subdomain")
+	}
+}

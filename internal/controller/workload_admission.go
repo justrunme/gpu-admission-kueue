@@ -167,7 +167,7 @@ func (r *WorkloadAdmissionReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	message := truncate(dec.Reason, 1024)
 	if env.EnvelopeSHA256 != "" {
-		if err := r.persistEvidence(ctx, wl, env); err != nil {
+		if err := r.persistEvidence(ctx, wl, env, dec.Decision); err != nil {
 			logger.Error(err, "persist evidence")
 			if newState == string(kueueapi.CheckStateReady) {
 				newState = string(kueueapi.CheckStateRejected)
@@ -472,9 +472,10 @@ func workloadFinishedOrInactive(wl *unstructured.Unstructured) bool {
 	return false
 }
 
-func evidenceConfigMapName(wl *unstructured.Unstructured, env evidence.Envelope) string {
-	// Hash-based name: no collisions across workloads, never truncated with a trailing '-'.
-	seed := fmt.Sprintf("%s/%s/%s/%s", wl.GetNamespace(), wl.GetUID(), env.EnvelopeSHA256, env.Timestamp)
+func evidenceConfigMapName(uid types.UID, decision string) string {
+	// Deterministic per workload UID + decision so requeues do not multiply ConfigMaps.
+	// Never truncated with a trailing '-'.
+	seed := fmt.Sprintf("%s/%s", uid, decision)
 	sum := sha256.Sum256([]byte(seed))
 	return fmt.Sprintf("ev-%x", sum[:16])
 }
@@ -497,7 +498,7 @@ func jobNameForEvidence(wl *unstructured.Unstructured) string {
 	return wl.GetName()
 }
 
-func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *unstructured.Unstructured, env evidence.Envelope) error {
+func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *unstructured.Unstructured, env evidence.Envelope, decision string) error {
 	if err := evidence.Verify(env); err != nil {
 		return err
 	}
@@ -505,7 +506,7 @@ func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *u
 	if err != nil {
 		return err
 	}
-	name := evidenceConfigMapName(wl, env)
+	name := evidenceConfigMapName(wl.GetUID(), decision)
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -513,16 +514,18 @@ func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *u
 			Labels: map[string]string{
 				evidenceLabelKey: "true",
 				// Job name for e2e lookups (not the Workload object name).
-				"workload":     jobNameForEvidence(wl),
-				"workload-obj": wl.GetName(),
-				"workload-ns":  wl.GetNamespace(),
+				"workload":      jobNameForEvidence(wl),
+				"workload-obj":  wl.GetName(),
+				"workload-ns":   wl.GetNamespace(),
+				"workload-uid":  string(wl.GetUID()),
+				"decision":      decision,
 			},
 		},
 		Data: map[string]string{
 			"envelope.json": string(raw),
 		},
 	}
-	// Append-only: never overwrite an existing evidence ConfigMap.
+	// Idempotent create: same UID+decision → same name → AlreadyExists on requeue.
 	err = r.Create(ctx, cm)
 	if apierrors.IsAlreadyExists(err) {
 		return nil

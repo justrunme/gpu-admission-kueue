@@ -400,20 +400,82 @@ func TestCollectUsageExcludesFinishedAndInactive(t *testing.T) {
 	}
 }
 
-func TestEvidenceConfigMapNameNoTrailingDash(t *testing.T) {
+func TestEvidenceConfigMapNameDeterministicPerDecision(t *testing.T) {
+	uid := types.UID("uid-1")
+	a := evidenceConfigMapName(uid, policy.DecisionDeny)
+	b := evidenceConfigMapName(uid, policy.DecisionDeny)
+	if a != b {
+		t.Fatalf("same UID+decision must be stable: %q vs %q", a, b)
+	}
+	if strings.HasSuffix(a, "-") || !strings.HasPrefix(a, "ev-") || len(a) > 63 {
+		t.Fatalf("unexpected name %q", a)
+	}
+	otherDecision := evidenceConfigMapName(uid, policy.DecisionAllow)
+	if a == otherDecision {
+		t.Fatal("different decisions must produce different ConfigMap names")
+	}
+	otherUID := evidenceConfigMapName(types.UID("uid-2"), policy.DecisionDeny)
+	if a == otherUID {
+		t.Fatal("different UIDs must produce different ConfigMap names")
+	}
+}
+
+func TestPersistEvidenceIdempotentOnRequeue(t *testing.T) {
+	s := testScheme(t)
 	wl := baseWorkload()
-	wl.SetUID("uid-1")
-	env := evidence.Envelope{EnvelopeSHA256: "sha256:abc", Timestamp: "2026-01-01T00:00:00Z"}
-	name := evidenceConfigMapName(wl, env)
-	if strings.HasSuffix(name, "-") {
-		t.Fatalf("name must not end with dash: %q", name)
+	wl.SetUID("uid-persist-1")
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: evidenceNamespace}}
+	c := fake.NewClientBuilder().WithScheme(s).WithObjects(ns).Build()
+	r := &WorkloadAdmissionReconciler{Client: c, AdmissionCheckName: "gpu-admission"}
+	env, err := evidence.Build(evidence.BuildOptions{
+		PolicyVersion: "v1",
+		PolicySHA256:  "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		ScenarioID:    "team-a/job-1",
+		Verdict:       policy.VerdictBlock,
+		Reason:        "disallowed_flavor: flavor \"gpu-h100\" is not in allowedFlavors",
+		TraceID:       "t1",
+		CommitSHA:     "unknown",
+		Timestamp:     "2026-01-01T00:00:00Z",
+		Details:       map[string]any{"decision": policy.DecisionDeny},
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.HasPrefix(name, "ev-") || len(name) > 63 {
-		t.Fatalf("unexpected name %q", name)
+	if err := r.persistEvidence(context.Background(), wl, env, policy.DecisionDeny); err != nil {
+		t.Fatalf("first persist: %v", err)
 	}
-	other := evidenceConfigMapName(wl, evidence.Envelope{EnvelopeSHA256: "sha256:def", Timestamp: "2026-01-01T00:00:01Z"})
-	if name == other {
-		t.Fatal("distinct envelopes must produce distinct ConfigMap names")
+	// Second persist with a different envelope timestamp must not create another CM.
+	env.Timestamp = "2026-01-01T00:00:01Z"
+	env.EnvelopeSHA256 = ""
+	env2, err := evidence.Build(evidence.BuildOptions{
+		PolicyVersion: "v1",
+		PolicySHA256:  "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		ScenarioID:    "team-a/job-1",
+		Verdict:       policy.VerdictBlock,
+		Reason:        "disallowed_flavor: flavor \"gpu-h100\" is not in allowedFlavors",
+		TraceID:       "t1",
+		CommitSHA:     "unknown",
+		Timestamp:     "2026-01-01T00:00:01Z",
+		Details:       map[string]any{"decision": policy.DecisionDeny},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.persistEvidence(context.Background(), wl, env2, policy.DecisionDeny); err != nil {
+		t.Fatalf("requeue persist: %v", err)
+	}
+	var list corev1.ConfigMapList
+	if err := c.List(context.Background(), &list); err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for i := range list.Items {
+		if list.Items[i].Labels[evidenceLabelKey] == "true" {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Fatalf("expected 1 evidence ConfigMap after requeue, got %d", n)
 	}
 }
 
