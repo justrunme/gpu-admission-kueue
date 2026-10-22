@@ -4,13 +4,13 @@
 Workload matching is exact via ownerReference (Job) or job-name labels only —
 never a substring of the Workload name.
 
-Prints the raw state, or REJECTED_EFFECTIVE when Kueue has already reset a
-Rejected check to Pending after deactivating the Workload.
+Prints the raw state, or:
+  REJECTED_EFFECTIVE — Kueue reset a Rejected check after deactivating the Workload
+  RETRY_EFFECTIVE    — Kueue reset a Retry check (Previously: Retry)
 
 Optional 3rd argument: reason_prefix. When set, exit 0 only if the check
-message (or REJECTED_EFFECTIVE with message containing the original reason)
-starts with that prefix. For Previously: Rejected, callers should also check
-evidence ConfigMaps.
+message starts with that prefix or contains it (including Previously lines).
+For stripped Previously: Rejected messages, callers should also check evidence.
 """
 from __future__ import annotations
 
@@ -57,9 +57,11 @@ def main() -> int:
                 active is False and state == "Pending" and "Rejected" in msg
             ):
                 out_state = "REJECTED_EFFECTIVE"
+            elif state == "Retry":
+                out_state = "Retry"
+            elif "Previously: Retry" in msg:
+                out_state = "RETRY_EFFECTIVE"
             if reason_prefix:
-                # Accept current message prefix, or Previously line that still
-                # embeds the original reason text after "Previously: Rejected: ".
                 ok = msg.startswith(reason_prefix) or reason_prefix in msg
                 if out_state in ("Rejected", "REJECTED_EFFECTIVE") and ok:
                     print(out_state)

@@ -479,6 +479,24 @@ func evidenceConfigMapName(wl *unstructured.Unstructured, env evidence.Envelope)
 	return fmt.Sprintf("ev-%x", sum[:16])
 }
 
+func jobNameForEvidence(wl *unstructured.Unstructured) string {
+	for _, ref := range wl.GetOwnerReferences() {
+		if ref.Kind == "Job" && ref.Name != "" {
+			return ref.Name
+		}
+	}
+	labels := wl.GetLabels()
+	if labels != nil {
+		if v := labels["batch.kubernetes.io/job-name"]; v != "" {
+			return v
+		}
+		if v := labels["job-name"]; v != "" {
+			return v
+		}
+	}
+	return wl.GetName()
+}
+
 func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *unstructured.Unstructured, env evidence.Envelope) error {
 	if err := evidence.Verify(env); err != nil {
 		return err
@@ -494,8 +512,10 @@ func (r *WorkloadAdmissionReconciler) persistEvidence(ctx context.Context, wl *u
 			Namespace: evidenceNamespace,
 			Labels: map[string]string{
 				evidenceLabelKey: "true",
-				"workload":       wl.GetName(),
-				"workload-ns":    wl.GetNamespace(),
+				// Job name for e2e lookups (not the Workload object name).
+				"workload":     jobNameForEvidence(wl),
+				"workload-obj": wl.GetName(),
+				"workload-ns":  wl.GetNamespace(),
 			},
 		},
 		Data: map[string]string{

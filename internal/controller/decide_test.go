@@ -416,3 +416,17 @@ func TestEvidenceConfigMapNameNoTrailingDash(t *testing.T) {
 		t.Fatal("distinct envelopes must produce distinct ConfigMap names")
 	}
 }
+
+func TestJobNameForEvidencePrefersOwnerRef(t *testing.T) {
+	wl := baseWorkload()
+	wl.SetName("job-allow-train-abc123")
+	wl.SetOwnerReferences([]metav1.OwnerReference{{
+		APIVersion: "batch/v1",
+		Kind:       "Job",
+		Name:       "allow-train",
+		UID:        "job-uid",
+	}})
+	if got := jobNameForEvidence(wl); got != "allow-train" {
+		t.Fatalf("got %q", got)
+	}
+}

@@ -16,10 +16,12 @@ NOTES="kind cluster; nvidia.com/gpu is a simulated extended resource, not a phys
 mkdir -p results
 
 log() { printf '%s\n' "$*"; }
+# Diagnostics must not pollute stdout captured into fail records.
+diag() { printf '%s\n' "$*" >&2; }
 TMP_PASSES="$(mktemp)"; TMP_FAILS="$(mktemp)"
 trap 'rm -f "$TMP_PASSES" "$TMP_FAILS"' EXIT
-pass() { log "PASS: $*"; echo "$1" >>"$TMP_PASSES"; }
-fail() { log "FAIL: $*"; echo "$1" >>"$TMP_FAILS"; }
+pass() { log "PASS: $*"; printf '%s\n' "$1" >>"$TMP_PASSES"; }
+fail() { log "FAIL: $*"; printf '%s\n' "$(printf '%s' "$1" | tr '\n' ' ')" >>"$TMP_FAILS"; }
 
 bash demo/setup.sh
 
@@ -38,14 +40,14 @@ kubectl wait --for=condition=Active --timeout=120s admissioncheck/gpu-admission
 
 dump_e2e_diagnostics() {
   local ns="${1:-team-a}"
-  log "---- e2e diagnostics (ns=$ns) ----"
-  kubectl -n gpu-admission-system get pods -o wide 2>/dev/null || true
-  kubectl -n gpu-admission-system logs -l app.kubernetes.io/name=gpu-admission-controller --tail=80 2>/dev/null || true
-  kubectl get admissioncheck gpu-admission -o yaml 2>/dev/null || true
-  kubectl get clusterqueue gpu-cluster-queue -o yaml 2>/dev/null || true
-  kubectl -n "$ns" get workloads -o yaml 2>/dev/null || true
-  kubectl -n kueue-system get pods -o wide 2>/dev/null || true
-  log "---- end diagnostics ----"
+  diag "---- e2e diagnostics (ns=$ns) ----"
+  kubectl -n gpu-admission-system get pods -o wide >&2 2>/dev/null || true
+  kubectl -n gpu-admission-system logs -l app.kubernetes.io/name=gpu-admission-controller --tail=80 >&2 2>/dev/null || true
+  kubectl get admissioncheck gpu-admission -o yaml >&2 2>/dev/null || true
+  kubectl get clusterqueue gpu-cluster-queue -o yaml >&2 2>/dev/null || true
+  kubectl -n "$ns" get workloads -o yaml >&2 2>/dev/null || true
+  kubectl -n kueue-system get pods -o wide >&2 2>/dev/null || true
+  diag "---- end diagnostics ----"
 }
 
 wait_workload_check_state() {
@@ -55,6 +57,7 @@ wait_workload_check_state() {
     state="$(kubectl -n "$ns" get workloads -o json 2>/dev/null | python3 "$HELPER" "$job" gpu-admission || true)"
     if [[ "$state" == "$want" ]]; then printf '%s\n' "$state"; return 0; fi
     if [[ "$want" == "Rejected" && "$state" == "REJECTED_EFFECTIVE" ]]; then printf '%s\n' "$state"; return 0; fi
+    if [[ "$want" == "Retry" && "$state" == "RETRY_EFFECTIVE" ]]; then printf '%s\n' "$state"; return 0; fi
     sleep 2
   done
   dump_e2e_diagnostics "$ns"
