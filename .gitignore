@@ -1,0 +1,16 @@
+bin/
+vendor/
+*.exe
+*.test
+*.out
+.idea/
+.vscode/
+*.swp
+.DS_Store
+cover.out
+coverage.html
+# local kind kubeconfigs
+kubeconfig
+*.kubeconfig
+# e2e evidence is written only by test/e2e/run.sh (CI artifact); never hand-edit or commit
+results/e2e.json
