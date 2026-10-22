@@ -36,6 +36,18 @@ fi
 
 kubectl wait --for=condition=Active --timeout=120s admissioncheck/gpu-admission
 
+dump_e2e_diagnostics() {
+  local ns="${1:-team-a}"
+  log "---- e2e diagnostics (ns=$ns) ----"
+  kubectl -n gpu-admission-system get pods -o wide 2>/dev/null || true
+  kubectl -n gpu-admission-system logs -l app.kubernetes.io/name=gpu-admission-controller --tail=80 2>/dev/null || true
+  kubectl get admissioncheck gpu-admission -o yaml 2>/dev/null || true
+  kubectl get clusterqueue gpu-cluster-queue -o yaml 2>/dev/null || true
+  kubectl -n "$ns" get workloads -o yaml 2>/dev/null || true
+  kubectl -n kueue-system get pods -o wide 2>/dev/null || true
+  log "---- end diagnostics ----"
+}
+
 wait_workload_check_state() {
   local ns="$1" job="$2" want="$3" timeout="${4:-120}"
   local end=$((SECONDS + timeout)) state=""
@@ -45,6 +57,7 @@ wait_workload_check_state() {
     if [[ "$want" == "Rejected" && "$state" == "REJECTED_EFFECTIVE" ]]; then printf '%s\n' "$state"; return 0; fi
     sleep 2
   done
+  dump_e2e_diagnostics "$ns"
   printf 'timeout want=%s last=%s\n' "$want" "${state:-none}"
   return 1
 }

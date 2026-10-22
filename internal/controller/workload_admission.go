@@ -179,28 +179,22 @@ func (r *WorkloadAdmissionReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	m["message"] = message
 	m["lastTransitionTime"] = time.Now().UTC().Format(time.RFC3339)
 	checks[idx] = m
+	// Replace the whole admissionChecks slice. Per-field "add" fails when Kueue
+	// already populated message/lastTransitionTime on the Pending entry.
+	if err := unstructured.SetNestedSlice(wl.Object, checks, "status", "admissionChecks"); err != nil {
+		return ctrl.Result{}, err
+	}
 	patch := []map[string]any{{
 		"op":    "replace",
-		"path":  fmt.Sprintf("/status/admissionChecks/%d/state", idx),
-		"value": newState,
-	}, {
-		"op":    "add",
-		"path":  fmt.Sprintf("/status/admissionChecks/%d/message", idx),
-		"value": message,
-	}, {
-		"op":    "add",
-		"path":  fmt.Sprintf("/status/admissionChecks/%d/lastTransitionTime", idx),
-		"value": m["lastTransitionTime"],
+		"path":  "/status/admissionChecks",
+		"value": checks,
 	}}
 	rawPatch, err := json.Marshal(patch)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	if err := r.Status().Patch(ctx, wl, client.RawPatch(types.JSONPatchType, rawPatch)); err != nil {
-		// Fallback: full status update of admissionChecks slice only via merge patch
-		if err2 := unstructured.SetNestedSlice(wl.Object, checks, "status", "admissionChecks"); err2 != nil {
-			return ctrl.Result{}, err
-		}
+		logger.Error(err, "json patch admissionChecks failed; falling back to status update")
 		if err3 := r.Status().Update(ctx, wl); err3 != nil {
 			return ctrl.Result{}, err3
 		}
