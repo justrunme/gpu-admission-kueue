@@ -8,6 +8,8 @@ Evidence: [docs/EVIDENCE.md](docs/EVIDENCE.md) (claims **on this corpus** only)
 
 Maintainer site: [https://justrunme.com](https://justrunme.com)
 
+Case page: [justrunme.com/cases/gpu-admission-kueue](https://justrunme.com/cases/gpu-admission-kueue/)
+
 ## What
 
 A controller that owns an AdmissionCheck (`controllerName: gpu-admission.justrunme.com/admission-check`). After Kueue reserves quota, this controller evaluates a cluster-scoped `GPUAdmissionPolicy` and sets the Workload AdmissionCheck state to:
