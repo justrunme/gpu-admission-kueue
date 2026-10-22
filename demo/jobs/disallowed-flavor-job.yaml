@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: disallowed-flavor
+  namespace: team-a
+  labels:
+    kueue.x-k8s.io/queue-name: gpu-lq
+    cost-center: cc-100
+    owner: alice
+    team: alpha
+  annotations:
+    gpu-admission.justrunme.com/estimated-hours: "1"
+spec:
+  suspend: true
+  template:
+    metadata:
+      labels:
+        cost-center: cc-100
+        owner: alice
+        team: alpha
+      annotations:
+        gpu-admission.justrunme.com/estimated-hours: "1"
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        gpu-admission.justrunme.com/gpu-flavor: h100-sim
+      containers:
+        - name: train
+          image: registry.example.com/ml/train:1.0
+          command: ["sh", "-c", "echo should-not-run"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+              nvidia.com/gpu: "1"
+            limits:
+              nvidia.com/gpu: "1"
