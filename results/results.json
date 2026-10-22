@@ -1,0 +1,511 @@
+{
+  "commit_sha": "unknown",
+  "generated_at": "2026-10-22T10:21:46Z",
+  "metrics": {
+    "allow_count": 1,
+    "claims_scope": "on this corpus of 13 scenarios",
+    "deny_count": 11,
+    "e2e_passed": null,
+    "e2e_skip_reason": "unit corpus only; e2e recorded separately by test/e2e when run",
+    "e2e_skipped": true,
+    "false_allow_count": 0,
+    "false_deny_legitimate": 0,
+    "hold_count": 1,
+    "scenario_count": 13,
+    "unit_tests_failed": 0,
+    "unit_tests_passed": 34
+  },
+  "passed": true,
+  "scenarios": [
+    {
+      "scenario_id": "allow_golden",
+      "expected": "ALLOW",
+      "actual": "ALLOW",
+      "match": true,
+      "reason": "policy_allow",
+      "envelope": {
+        "acs_disposition": "ALLOW",
+        "blocked_call_id": null,
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "ALLOW",
+          "estimated_cost_usd_micros": 2000000,
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_hours": 2,
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:9ae0b725eb1cd5d2206162905c9617dad2d4e47d2f648c946334f7bb2166d1f1",
+          "max_budget_usd_micros": 4000000,
+          "max_gpu_hours": 8,
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 0,
+          "policy_version": "gpu-policy-1.0",
+          "team": "alpha",
+          "team_gpu_limit": 4,
+          "team_gpu_used": 0,
+          "workload": "job-ok"
+        },
+        "envelope_sha256": "sha256:c6366d631075bcc3e81941ea25ff287587057cd7e423d9cc564fa3d27417bbc6",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "policy_allow",
+        "scenario_id": "allow_golden",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "ALLOW"
+      }
+    },
+    {
+      "scenario_id": "nil_policy_fail_closed",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "malformed_policy: policy is nil",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "nil_policy_fail_closed",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:9ae0b725eb1cd5d2206162905c9617dad2d4e47d2f648c946334f7bb2166d1f1",
+          "namespace": "team-a",
+          "workload": "job-ok"
+        },
+        "envelope_sha256": "sha256:bff436a0ccfd2babe44b1b0f758c62fbab71189c882d0b16e42dd04924336896",
+        "policy_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "policy_version": "none",
+        "reason": "malformed_policy: policy is nil",
+        "scenario_id": "nil_policy_fail_closed",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "malformed_policy_empty_version",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "malformed_policy: policy.spec.version is empty",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "malformed_policy_empty_version",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:9ae0b725eb1cd5d2206162905c9617dad2d4e47d2f648c946334f7bb2166d1f1",
+          "namespace": "team-a",
+          "workload": "job-ok"
+        },
+        "envelope_sha256": "sha256:5d6b8037ebe3a40cbdab1a4936b801ec9b4ff92a941d49874c4a24e10fb826a3",
+        "policy_sha256": "sha256:7f96d6c2d183a0e275c11b86802016361e1f7e7d7c0b6fa67d40d05e61e533d9",
+        "policy_version": "invalid",
+        "reason": "malformed_policy: policy.spec.version is empty",
+        "scenario_id": "malformed_policy_empty_version",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "missing_required_label_owner",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "missing_required_label: missing required label \"owner\"",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "missing_required_label_owner",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:ac9c20fc51e63fccfe64ee50ece0b829cb19c7966db5568a280820ae71d21845",
+          "namespace": "team-a",
+          "policy_version": "gpu-policy-1.0",
+          "workload": "job-missing-owner"
+        },
+        "envelope_sha256": "sha256:3fb5fd8b9c1f50b936dbf069009bde0f23d5865f9dc44ddb18042f11f6cbaf82",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "missing_required_label: missing required label \"owner\"",
+        "scenario_id": "missing_required_label_owner",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "disallowed_flavor",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "disallowed_flavor: flavor \"gpu-h100\" is not in allowedFlavors",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "disallowed_flavor",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-h100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:dfc32a014c84d196d73ba18936b9ed4b2849346b92e380745e47f67a0da9d146",
+          "namespace": "team-a",
+          "policy_version": "gpu-policy-1.0",
+          "workload": "job-bad-flavor"
+        },
+        "envelope_sha256": "sha256:228fbf1ac9062d138664087e2f217adf0e22c9e7f1da1328c49dee276e5f7386",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "disallowed_flavor: flavor \"gpu-h100\" is not in allowedFlavors",
+        "scenario_id": "disallowed_flavor",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "over_namespace_quota_hold",
+      "expected": "HOLD",
+      "actual": "HOLD",
+      "match": true,
+      "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "over_namespace_quota_hold",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "HOLD",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:9ae0b725eb1cd5d2206162905c9617dad2d4e47d2f648c946334f7bb2166d1f1",
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 4,
+          "policy_version": "gpu-policy-1.0",
+          "workload": "job-ok"
+        },
+        "envelope_sha256": "sha256:3978a78ab1aa23393a0173625f171ac49fae3aa4e94170c44682fbdac507166d",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
+        "scenario_id": "over_namespace_quota_hold",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "over_namespace_quota_deny",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "over_namespace_quota_deny",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:9ae0b725eb1cd5d2206162905c9617dad2d4e47d2f648c946334f7bb2166d1f1",
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 4,
+          "policy_version": "gpu-policy-1.0",
+          "workload": "job-ok"
+        },
+        "envelope_sha256": "sha256:c53f5ad2b01f23e871a2e1c3f75cfc29f258790157f6688031c5380504307eca",
+        "policy_sha256": "sha256:bb9f4e91d1a8d6149f7ed25ea4022135b506205f20ab7a24af8d8f8bf29d1b6e",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "over_namespace_quota: namespace \"team-a\" GPU quota exceeded: used=4 request=1 limit=4",
+        "scenario_id": "over_namespace_quota_deny",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "disallowed_image_registry",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "disallowed_image_registry: image \"evil.example/x:latest\" does not match allowedImageRegistries",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "disallowed_image_registry",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "evil.example/x:latest"
+          ],
+          "inputs_digest": "sha256:38dad2723d14773c1800a144e95f2a8a213176e233d604606944adc632c079e3",
+          "namespace": "team-a",
+          "policy_version": "gpu-policy-1.0",
+          "rejected_image": "evil.example/x:latest",
+          "workload": "job-bad-registry"
+        },
+        "envelope_sha256": "sha256:c1e1e729e7df4b18e8d30208c8ff5a559c99c972a1ffbce3d594cc17b3a57364",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "disallowed_image_registry: image \"evil.example/x:latest\" does not match allowedImageRegistries",
+        "scenario_id": "disallowed_image_registry",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "disallowed_ghcr_evil_prefix",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "disallowed_image_registry: image \"ghcr.io/evil/x:latest\" does not match allowedImageRegistries",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "disallowed_ghcr_evil_prefix",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "ghcr.io/evil/x:latest"
+          ],
+          "inputs_digest": "sha256:ffb4786f55cee08231a71f53f5c1f324a9ae2b08a894a8276ebb8aa17da9b97b",
+          "namespace": "team-a",
+          "policy_version": "gpu-policy-1.0",
+          "rejected_image": "ghcr.io/evil/x:latest",
+          "workload": "job-ghcr-evil"
+        },
+        "envelope_sha256": "sha256:8ac62097e45004b1e119c43c067ac1e3f3477d4a9c53b37804b6890514443d20",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "disallowed_image_registry: image \"ghcr.io/evil/x:latest\" does not match allowedImageRegistries",
+        "scenario_id": "disallowed_ghcr_evil_prefix",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "over_gpu_hours",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "over_gpu_hours: GPU-hours 20.00 exceed max 8.00",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "over_gpu_hours",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_hours": 20,
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:336d45b04f5394c85312e4422fb4c3c915f8ef16bcbc63fbe6cf8703ec849b84",
+          "max_gpu_hours": 8,
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 0,
+          "policy_version": "gpu-policy-1.0",
+          "team": "alpha",
+          "team_gpu_limit": 4,
+          "team_gpu_used": 0,
+          "workload": "job-over-hours"
+        },
+        "envelope_sha256": "sha256:fc61d4321eef05aaf476dc3b153fd54b1249963f68ab36ba83c7051e1e06974c",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "over_gpu_hours: GPU-hours 20.00 exceed max 8.00",
+        "scenario_id": "over_gpu_hours",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "over_budget",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "over_budget: estimated cost 6000000 micro-USD exceeds budget 4000000",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "over_budget",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "estimated_cost_usd_micros": 6000000,
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_hours": 6,
+          "gpu_request": 2,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:a890541f2f285b17f4556b3e6a1e44692b04897ff8202bf10be9ec0348e49d3b",
+          "max_budget_usd_micros": 4000000,
+          "max_gpu_hours": 8,
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 0,
+          "policy_version": "gpu-policy-1.0",
+          "team": "alpha",
+          "team_gpu_limit": 4,
+          "team_gpu_used": 0,
+          "workload": "job-over-budget"
+        },
+        "envelope_sha256": "sha256:3e2c0e0adab5bc5d54ce858ceaceee3aef2a059b54695bb298a39d7ad3881302",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "over_budget: estimated cost 6000000 micro-USD exceeds budget 4000000",
+        "scenario_id": "over_budget",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "missing_estimated_hours_fail_closed",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "undecidable: maxGPUHoursPerWorkload set but estimated-hours annotation missing or invalid",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "missing_estimated_hours_fail_closed",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:6848513e22d1fcda5984a301878ba8b4d5e45a5ddf51295712f361bca60a6abd",
+          "namespace": "team-a",
+          "namespace_gpu_limit": 4,
+          "namespace_gpu_used": 0,
+          "policy_version": "gpu-policy-1.0",
+          "team": "alpha",
+          "team_gpu_limit": 4,
+          "team_gpu_used": 0,
+          "workload": "job-no-hours"
+        },
+        "envelope_sha256": "sha256:db48afb2cde38d2d2271bee3fffa7ed5737ba1d0cb9b47a9ab7e67b6399b91ae",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "undecidable: maxGPUHoursPerWorkload set but estimated-hours annotation missing or invalid",
+        "scenario_id": "missing_estimated_hours_fail_closed",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    },
+    {
+      "scenario_id": "namespace_not_in_quota_map",
+      "expected": "DENY",
+      "actual": "DENY",
+      "match": true,
+      "reason": "namespace_not_in_quota_map: namespace \"unknown-ns\" has no GPU quota entry",
+      "envelope": {
+        "acs_disposition": "DENY",
+        "blocked_call_id": "namespace_not_in_quota_map",
+        "commit_sha": "unknown",
+        "details": {
+          "decision": "DENY",
+          "flavors": [
+            "gpu-a100"
+          ],
+          "gpu_request": 1,
+          "images": [
+            "registry.example.com/ml/train:1.0"
+          ],
+          "inputs_digest": "sha256:1a4e33901632a8acbc8ff3531773a71193da3cd39e548fb2e270578ec61ca5a2",
+          "namespace": "unknown-ns",
+          "policy_version": "gpu-policy-1.0",
+          "workload": "job-unknown-ns"
+        },
+        "envelope_sha256": "sha256:b142fc6f6ad3d3839601375dc0fcb8b7de4eb379e6e531e26299ed4598c87e49",
+        "policy_sha256": "sha256:931e384c25cfe8cca174dca25836f68b9eee52b633c5d3c0ddcd22220e3347c2",
+        "policy_version": "gpu-policy-1.0",
+        "reason": "namespace_not_in_quota_map: namespace \"unknown-ns\" has no GPU quota entry",
+        "scenario_id": "namespace_not_in_quota_map",
+        "schema_version": "1.0.0",
+        "timestamp": "2026-10-22T10:21:44Z",
+        "trace_id": "unit-corpus",
+        "verdict": "BLOCK"
+      }
+    }
+  ],
+  "suite_time_ms": 1967
+}

@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: allow-train
+  namespace: team-a
+  labels:
+    kueue.x-k8s.io/queue-name: gpu-lq
+    cost-center: cc-100
+    owner: alice
+    team: alpha
+  annotations:
+    gpu-admission.justrunme.com/estimated-hours: "2"
+spec:
+  suspend: true
+  template:
+    metadata:
+      labels:
+        cost-center: cc-100
+        owner: alice
+        team: alpha
+      annotations:
+        gpu-admission.justrunme.com/estimated-hours: "2"
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        gpu-admission.justrunme.com/gpu-flavor: a100-sim
+      containers:
+        - name: train
+          image: registry.example.com/ml/train:1.0
+          command: ["sh", "-c", "echo simulated-gpu-train && sleep 5"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+              nvidia.com/gpu: "1"

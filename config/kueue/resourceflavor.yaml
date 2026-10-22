@@ -1,0 +1,21 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: gpu-a100-sim
+  annotations:
+    gpu-admission.justrunme.com/gpu-model: A100-SIM
+spec:
+  nodeLabels:
+    gpu-admission.justrunme.com/gpu-flavor: a100-sim
+    nvidia.com/gpu.product: A100-SIM
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: gpu-h100-disallowed
+  annotations:
+    gpu-admission.justrunme.com/gpu-model: H100-SIM
+spec:
+  nodeLabels:
+    gpu-admission.justrunme.com/gpu-flavor: h100-sim
+    nvidia.com/gpu.product: H100-SIM

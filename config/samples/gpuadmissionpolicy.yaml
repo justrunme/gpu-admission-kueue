@@ -1,0 +1,27 @@
+apiVersion: gpu-admission.justrunme.com/v1alpha1
+kind: GPUAdmissionPolicy
+metadata:
+  name: default
+spec:
+  version: gpu-policy-1.0
+  requiredLabels:
+    - cost-center
+    - owner
+  allowedFlavors:
+    - gpu-a100-sim
+  allowedGPUModels:
+    - A100-SIM
+  allowedImageRegistries:
+    - registry.example.com/
+    - ghcr.io/acme/
+  namespaceGPUQuota:
+    team-a: 2
+    team-b: 1
+  teamGPUQuota:
+    alpha: 2
+    beta: 1
+  teamLabelKey: team
+  maxGPUHoursPerWorkload: 8
+  maxBudgetUSDMicros: 8000000
+  gpuHourPriceMicros: 1000000
+  holdOnQuotaExhausted: true

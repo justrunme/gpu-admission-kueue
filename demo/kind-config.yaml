@@ -1,0 +1,28 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gpu-admission
+networking:
+  # reduce flakiness in nested CI VMs
+  kubeProxyMode: iptables
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "gpu-admission.justrunme.com/gpu-flavor=a100-sim,nvidia.com/gpu.product=A100-SIM"
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "gpu-admission.justrunme.com/gpu-flavor=a100-sim,nvidia.com/gpu.product=A100-SIM"
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "gpu-admission.justrunme.com/gpu-flavor=h100-sim,nvidia.com/gpu.product=H100-SIM"
