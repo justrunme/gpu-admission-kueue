@@ -99,6 +99,11 @@ make build
 go run ./cmd/corpus && go run ./cmd/evidencegen
 ```
 
+## Author
+
+Andrey Lesnikov — Senior DevOps & AI Platform Engineer  
+[https://orcid.org/0009-0004-7583-4314](https://orcid.org/0009-0004-7583-4314)
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
